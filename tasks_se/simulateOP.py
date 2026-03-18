@@ -1,6 +1,5 @@
 import os
 import time
-from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,14 +16,20 @@ class SIMULATEOP(TASK):
     _num_lock = threading.Lock()
 
     def __init__(self, cate, race, u=None, username=None, pwd=None, shared_dr=None,
-                 x_p=0, y_p=0, x_s=1, y_s=1, name=None):
-        super().__init__(u, x_p, y_p, x_s, y_s)
+                 display=False, cover=None, name=None):
+        super().__init__(u, display)
         logger.add(f"{self.log_dir}/{self.class_name}.log", rotation="1 MB",
-                   filter=lambda r: r["file"].name == f"{os.path.basename(__file__)}")
+                   filter=lambda re: re["file"].name == f"{os.path.basename(__file__)}")
         self.category = cate
         self.race = race
         self.pos = SIMULATEOP.Num
         self.name = f"{self.class_name}{SIMULATEOP.Num}" if name is None else name
+        if self.display:
+            self._check_cover_valid(cover)
+            self.x_p = cover[0]
+            self.y_p = cover[1]
+            self.x_s = cover[2]
+            self.y_s = cover[3]
         if_share = not (u or username or pwd)
         if if_share:
             if shared_dr is None:
@@ -53,9 +58,9 @@ class SIMULATEOP(TASK):
             entry = self.dr.find_element(By.XPATH, "//span[@class='bannerbtn btn2' and text()='点击进入大赛']")
             self._safe_click(entry)
             username_blank = self.dr.find_element(By.XPATH, "//input[@name='password']")
-            self._safe_send_keys(username_blank, self.username)
+            self._safe_send_text(username_blank, self.username)
             pwd_blank = self.dr.find_element(By.XPATH, "//input[@name='pwd1']")
-            self._safe_send_keys(pwd_blank, self.pwd)
+            self._safe_send_text(pwd_blank, self.pwd)
             login = (
                 self.dr.find_element(By.XPATH, "//span[text()='登录']"))
             self._safe_click(login)
@@ -113,10 +118,10 @@ class SIMULATEOP(TASK):
             )
             # 确定操作对象
             code_blank = self.dr.find_element(By.XPATH, "//span[@class='txt' and contains(text(), '代码')]/..//input")
-            self._safe_send_keys(code_blank, Keys.CONTROL + "a")
-            self._safe_send_keys(code_blank, Keys.DELETE)
-            self._safe_send_keys(code_blank, code)
-            self._safe_send_keys(code_blank, Keys.RETURN)
+            code_blank.send_keys(Keys.CONTROL + "a")
+            code_blank.send_keys(Keys.DELETE)
+            self._safe_send_text(code_blank, code)
+            code_blank.send_keys(Keys.RETURN)
             # 确定操作方向
             op_bt = None
             op_selection = self.dr.find_element(By.XPATH, "//span[@class='txt' and contains(text(), '买卖方向')]")
@@ -130,9 +135,9 @@ class SIMULATEOP(TASK):
             # 确定操作数量
             amount_blank = self.dr.find_element(By.XPATH,
                                                 "//span[@class='txt' and contains(text(), '委托数量')]/..//input")
-            self._safe_send_keys(amount_blank, Keys.CONTROL + "a")
-            self._safe_send_keys(amount_blank, Keys.DELETE)
-            self._safe_send_keys(amount_blank, amount)
+            amount_blank.send_keys(Keys.CONTROL + "a")
+            amount_blank.send_keys(Keys.DELETE)
+            self._safe_send_text(amount_blank, amount)
             # 下单
             confirm_bt = WebDriverWait(self.dr, 30).until(
                 EC.presence_of_element_located((By.XPATH, "//span[text()='下单']/..")))
@@ -173,13 +178,13 @@ if __name__ == '__main__':
     CODE_list_index = ["000001", "000002"]
     URL = "https://vetp.csmar.com"
     RACE0 = "实训综合大赛"
-    s0 = SIMULATEOP(CATEGORY0, RACE0, u=URL, username=USERNAME, pwd=PWD, x_p=0, y_p=0, x_s=1920, y_s=1080)
-    # balance = s0.find_balance()
-    # print(balance)
+    s0 = SIMULATEOP(CATEGORY0, RACE0, u=URL, username=USERNAME, pwd=PWD)
+    balance = s0.find_balance()
+    print(balance)
     for CODE in CODE_list_bond:
         s0.run(CODE)
     RACE1 = "实训综合大赛"
-    s1 = SIMULATEOP(CATEGORY1, RACE1, shared_dr=s0.dr, x_p=1920, y_p=0, x_s=1920, y_s=1080)
+    s1 = SIMULATEOP(CATEGORY1, RACE1, shared_dr=s0.dr)
     for CODE in CODE_list_index:
         s1.run(CODE)
     time.sleep(100000)

@@ -17,15 +17,21 @@ class AUTOGETSALE(TASK):
     Num = 0
     _num_lock = threading.Lock()
 
-    def __init__(self, u, user_name, password, x_p=0, y_p=0, x_s=1, y_s=1, name=None):
-        super().__init__(u, x_p, y_p, x_s, y_s)
+    def __init__(self, u, user_name, password, display=False, cover=None, name=None):
+        super().__init__(u, display)
         logger.add(f"{self.log_dir}/{self.class_name}.log", rotation="1 MB",
-                   filter=lambda r: r["file"].name == f"{os.path.basename(__file__)}")
+                   filter=lambda re: re["file"].name == f"{os.path.basename(__file__)}")
         self.user_name = user_name
         self.password = password
         self.period = time.strftime("%Y-%m-%d~%Y-%m-%d", time.localtime())
         self.result = None
         self.name = f"{self.class_name}{AUTOGETSALE.Num}" if name is None else name
+        if self.display:
+            self._check_cover_valid(cover)
+            self.x_p = cover[0]
+            self.y_p = cover[1]
+            self.x_s = cover[2]
+            self.y_s = cover[3]
         self.dr = self._init_driver()
         with AUTOGETSALE._num_lock:
             AUTOGETSALE.Num += 1
@@ -35,8 +41,8 @@ class AUTOGETSALE(TASK):
         u_bt = self.dr.find_element(By.XPATH, '//*[@id="txt_userName"]')
         p_bt = self.dr.find_element(By.XPATH, '//*[@id="txt_password"]')
         s_bt = self.dr.find_element(By.XPATH, '//*[@id="submitLoginBtn"]')
-        self._safe_send_keys(u_bt, self.user_name)
-        self._safe_send_keys(p_bt, self.password)
+        self._safe_send_text(u_bt, self.user_name)
+        self._safe_send_text(p_bt, self.password)
         self._safe_click(s_bt)
 
     # 爬取某天银豹每天的销售额（产品/服务）和单数 [后续可根据需求改变该函数]
@@ -52,7 +58,7 @@ class AUTOGETSALE(TASK):
 
     # 爬取银豹某时间段每天的数据
     def _get_data(self):
-        logger.info(f"Start getting {self.period} data...")
+        logger.info(f"Getting {self.period} data...")
         # 获取起始与结束时间
         start_str, end_str = self.period.split('~')
         start_date = datetime.strptime(start_str, "%Y-%m-%d")
@@ -158,7 +164,7 @@ if __name__ == '__main__':
     load_dotenv()
     un = os.getenv("POSPAL_USERNAME")
     p = os.getenv("POSPAL_PASSWORD")
-    s = AUTOGETSALE(url, un, p, x_p=0, y_p=0, x_s=1920, y_s=1080)
+    s = AUTOGETSALE(url, un, p)
     s.set_period("2025-6-1~2025-6-3")
     s.run()
     print(s.result)

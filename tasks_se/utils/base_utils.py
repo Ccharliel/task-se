@@ -7,6 +7,15 @@ import shutil
 import platform
 import sys
 from loguru import logger
+import tkinter as tk
+
+def get_screen_resolution():
+    root = tk.Tk()
+    # 获取屏幕宽度和高度
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
+    root.destroy()  # 关闭窗口
+    return width, height
 
 def auto_del_files(folder_path, max_nums):
     """
@@ -110,3 +119,5 @@ def chromedriver_downloading(version, save_dir):
             os.remove(zip_path)
         if tmp_dir and os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
+
+

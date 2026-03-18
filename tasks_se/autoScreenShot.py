@@ -13,18 +13,24 @@ class AUTOSCREENSHOT(TASK):
     Num = 0
     _num_lock = threading.Lock()
 
-    def __init__(self, u, x_p=0, y_p=0, x_s=1, y_s=1, name=None):
-        super().__init__(u, x_p, y_p, x_s, y_s)
+    def __init__(self, u, display=False, cover=None, name=None):
+        super().__init__(u, display)
         logger.add(f"{self.log_dir}/{self.class_name}.log", rotation="1 MB",
-                   filter=lambda r: r["file"].name == f"{os.path.basename(__file__)}")
+                   filter=lambda re: re["file"].name == f"{os.path.basename(__file__)}")
         self.name = f"{self.class_name}{AUTOSCREENSHOT.Num}" if name is None else name
+        if self.display:
+            self._check_cover_valid(cover)
+            self.x_p = cover[0]
+            self.y_p = cover[1]
+            self.x_s = cover[2]
+            self.y_s = cover[3]
         self.dr = self._init_driver()
         with AUTOSCREENSHOT._num_lock:
             AUTOSCREENSHOT.Num += 1
 
     # 自动翻页截屏并保存
     def constant_shot(self):
-        saving_path = f"log/{self.class_name}/results/{self.name}"
+        saving_path = f"{self.log_dir}/results/{self.name}"
         os.makedirs(saving_path, exist_ok=True)
         page_num = int(self.dr.find_element(By.XPATH, '//*[@class="slide-number"]//*[@class="slide-number-b"]').text)
         body = self.dr.find_element(By.TAG_NAME, "body")
@@ -55,6 +61,6 @@ if __name__ == '__main__':
     folder_path = r"D:\Users\23213\Documents\myDocument\课\bin\R语言"
     for f in os.listdir(folder_path):
         url = "file:///" + os.path.join(folder_path, f)
-        name = f.split(".")[0]
-        s = AUTOSCREENSHOT(url, name=name, x_p=0, y_p=0, x_s=1920, y_s=1080)
+        file_name = f.split(".")[0]
+        s = AUTOSCREENSHOT(url, name=file_name)
         s.run()

@@ -1,5 +1,14 @@
 import pandas as pd
+from loguru import logger
 from tasks_se.utils.base_utils import *
+
+
+CURRENT_FILE = Path(__file__).resolve()
+CURRENT_DIR = CURRENT_FILE.parent
+log_dir = f"{CURRENT_DIR.parent}/logs/AUTOFILL"
+os.makedirs(log_dir, exist_ok=True)
+logger.add(f"{log_dir}/AUTOFILL.log", rotation="1 MB",
+           filter=lambda r: r["file"].name == f"{os.path.basename(__file__)}")
 
 
 # AUTOFILL 任务所需专属工具
@@ -11,15 +20,21 @@ def _creat_info(name: str):
     os.makedirs("info", exist_ok=True)
     path = f"info/{name}.xlsx"
     if os.path.exists(path):
-        print(f"{path} Exists!!!")
+        logger.info(f"{path} Exists !!!")
+        return 1
     else:
+        logger.warning(f"{path} not Exists !!! Creating {path} ...")
         df.to_excel(path, index=False, sheet_name="Sheet1")
-    auto_del_files("info", 10)
-    return path
+        auto_del_files("info", 10)
+        return 0
 
 
 def get_info(name: str):
-    path = _creat_info(name)
+    path = f"info/{name}.xlsx"
+    ret = _creat_info(name)
+    if ret == 0:
+        logger.warning(f"Please fill in the basic info in {path} and retry !!!")
+        return None
     df = pd.read_excel(path, index_col=0, dtype=str)
     try:
         df["info"]

@@ -1,8 +1,9 @@
+import os
 import time
 import tempfile
+from typing import Tuple, Any
 from apscheduler.schedulers.blocking import BlockingScheduler
 import undetected_chromedriver as uc
-from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.support.select import Select
 import threading
@@ -11,6 +12,7 @@ import shutil
 from dotenv import load_dotenv
 from pathlib import Path
 from loguru import logger
+import sys
 
 from tasks_se.utils.base_utils import *
 
@@ -19,6 +21,9 @@ CURRENT_FILE = Path(__file__).resolve()
 CURRENT_DIR = CURRENT_FILE.parent
 log_dir = f"{CURRENT_DIR.parent}/logs"
 os.makedirs(log_dir, exist_ok=True)
+logger.add(f"{log_dir}/cover.log",
+           rotation="1 MB",
+           filter=lambda record: record["function"] == "_check_cover_valid")
 logger.add(f"{log_dir}/driver.log",
            rotation="1 MB",
            filter=lambda record: record["function"] == "_init_driver")
@@ -27,20 +32,40 @@ logger.add(f"{log_dir}/driver.log",
 class TASK(ABC):
     NUM = 0
     _num_lock = threading.Lock()
+    displayed_windows = []  # 记录已分配显示窗口的坐标和大小，格式为 (x_p, y_p, x_s, y_s)
 
-    def __init__(self, u, x_p, y_p, x_s, y_s, name=None):
+    def __init__(self, u, display: bool=False, cover: Tuple[Any, Any, Any, Any]=None, name=None):
         self.u = u
-        self.x_p = x_p
-        self.y_p = y_p
-        self.x_s = x_s
-        self.y_s = y_s
+        self.display = display
         self.class_name = self.__class__.__name__
         self.log_dir = f"logs/{self.class_name}"
         os.makedirs(self.log_dir, exist_ok=True)
         self.name = f"{self.class_name}{TASK.NUM}" if name is None else name
+        # 子类 name 重写后再检查 cover 合法性并确定窗口位置
+        self.x_p = None
+        self.y_p = None
+        self.x_s = None
+        self.y_s = None
         self.dr = None  # 子类 name 重写后再初始化驱动
         with TASK._num_lock:
             TASK.NUM += 1
+
+    def _check_cover_valid(self, cover):
+        if not isinstance(cover, tuple) or len(cover) != 4:
+            logger.critical(f"{self.name} with invalid cover: cover must be a tuple of (x_p, y_p, x_s, y_s) !!!")
+            raise ValueError("Invalid cover")
+        screen_w, screen_h = get_screen_resolution()
+        if not (0 <= cover[0] <= screen_w - cover[2] and
+                0 <= cover[1] <= screen_h - cover[3]):
+            logger.critical(f"{self.name} with invalid cover: cover must fit within the screen resolution !!!")
+            raise ValueError("Invalid cover")
+        for win in TASK.displayed_windows:
+            if not (cover[0] + cover[2] <= win[0] or cover[0] >= win[0] + win[2] or
+                    cover[1] + cover[3] <= win[1] or cover[1] >= win[1] + win[3]):
+                logger.critical(f"{self.name} with invalid cover: cover overlaps with window {win} !!!")
+                raise ValueError("Invalid cover")
+        TASK.displayed_windows.append(cover)
+        logger.success(f"{self.name} successfully open window {cover} !!!")
 
     def _init_driver(self, shared_dr=None):
         """初始化驱动"""
@@ -59,6 +84,10 @@ class TASK(ABC):
                 ## 确定驱动参数
                 opt = uc.ChromeOptions()
                 opt.page_load_strategy = "eager"
+                # 无头模式
+                if not self.display:
+                    opt.add_argument("--headless=new")  # chrome 109+ 的无头模式
+                    opt.add_argument('--window-size=1920,1080')  # 设置无头模式下的窗口大小
                 # 将用户数据保存在 各系统临时目录下的 crawler_{self.class_name}_{随机字符串} 子目录
                 user_data_dir = tempfile.mkdtemp(prefix=f"crawler_{self.class_name}_")
                 opt.add_argument(f"--user-data-dir={user_data_dir}")
@@ -86,8 +115,9 @@ class TASK(ABC):
                 driver.get(self.u)
                 time.sleep(0.1)
                 driver.implicitly_wait(3)
-                driver.set_window_position(self.x_p, self.y_p)
-                driver.set_window_size(self.x_s, self.y_s)
+                if self.display:
+                    driver.set_window_position(self.x_p, self.y_p)
+                    driver.set_window_size(self.x_s, self.y_s)
             logger.success(f'{self.name} successfully initialize driver !!!')
             return driver
         except Exception as e:
@@ -97,6 +127,10 @@ class TASK(ABC):
     # 常规的元素操作方法，需要先确保元素可见且可交互
     def _ensure_element_visible(self, element):
         """滚动到元素可见，不改变窗口状态"""
+        try:
+            self.dr.execute_script("window.focus();")  # 确保窗口获得焦点，避免滚动失效
+        except:
+            pass
         self.dr.execute_script(
             "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
             element
@@ -116,7 +150,7 @@ class TASK(ABC):
             except Exception as e:
                 raise RuntimeError(f"Failed to click element: {e}")
 
-    def _safe_send_keys(self, element, text):
+    def _safe_send_text(self, element, text):
         """安全的输入文本操作"""
         self._ensure_element_visible(element)
         try:
@@ -132,10 +166,9 @@ class TASK(ABC):
         except:
             # 如果普通输入文本失败，用JS设置值
             try:
-                if isinstance(key, str):
-                    self.dr.execute_script(f"arguments[0].value = '{text}';", element)
+                self.dr.execute_script(f"arguments[0].value = '{text}';", element)
             except Exception as e:
-                raise RuntimeError(f"Failed to send keys to element: {e}")
+                raise RuntimeError(f"Failed to send text to element: {e}")
 
     def _safe_select(self, element, by="text", value=None):
         """安全选择方法"""
@@ -173,22 +206,6 @@ class TASK(ABC):
         else:
             scheduler.add_job(self.run, 'date', run_date=date + ' ' + point)
         scheduler.start()
-
-    def reset_loc(self, mode, x_p=None, y_p=None, x_s=None, y_s=None):
-        if mode == "cus":
-            if (x_p is not None) and (y_p is not None) and (x_s is not None) and (y_s is not None):
-                self.dr.set_window_position(x_p, y_p)
-                self.dr.set_window_size(x_s, y_s)
-            else:
-                raise Exception("Custom mode requires x_p, y_p, x_s, y_s parameters!")
-        elif mode == "max":
-            self.dr.maximize_window()
-        elif mode == "min":
-            self.dr.minimize_window()
-        elif mode == "recover":
-            self.dr.set_window_position(self.x_p, self.y_p)
-            self.dr.set_window_size(self.x_s, self.y_s)
-        time.sleep(0.5)
 
     def __del__(self):
         self.dr.quit()

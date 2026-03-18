@@ -1,6 +1,8 @@
 import time
-from selenium.common import ElementNotInteractableException, NoSuchElementException
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import threading
 from difflib import get_close_matches
 from loguru import logger
@@ -14,12 +16,18 @@ class AUTOFILL(TASK):
     Num = 0
     _num_lock = threading.Lock()
 
-    def __init__(self, u, info: pd.DataFrame, x_p=0, y_p=0, x_s=1, y_s=1, name=None):
-        super().__init__(u, x_p, y_p, x_s, y_s)
+    def __init__(self, u, info: pd.DataFrame, display=False, cover=None, name=None):
+        super().__init__(u, display)
         logger.add(f"{self.log_dir}/{self.class_name}.log", rotation="1 MB",
-                   filter=lambda r: r["file"].name == f"{os.path.basename(__file__)}")
+                   filter=lambda re: re["file"].name == f"{os.path.basename(__file__)}")
         self.info = info
         self.name = f"{self.class_name}{AUTOFILL.Num}" if name is None else name
+        if self.display:
+            self._check_cover_valid(cover)
+            self.x_p = cover[0]
+            self.y_p = cover[1]
+            self.x_s = cover[2]
+            self.y_s = cover[3]
         self.dr = self._init_driver()
         with AUTOFILL._num_lock:
             AUTOFILL.Num += 1
@@ -54,9 +62,9 @@ class AUTOFILL(TASK):
             logger.warning(f"[Question {q_current_num}] Fatal Error: Can't find blank !!!")
             return 0
         if basic_info:
-            self._safe_send_keys(blank, basic_info)
+            self._safe_send_text(blank, basic_info)
         else:
-            self._safe_send_keys(blank, "无")
+            self._safe_send_text(blank, "无")
             logger.info(f"[Question {q_current_num}] This vacant is not related to basic info")
         return 1
 
@@ -103,14 +111,16 @@ class AUTOFILL(TASK):
         if basic_info:
             matches = get_close_matches(basic_info, options, n=1, cutoff=0.4)
             if matches:
-                selection = (self.dr.find_element
-                             (By.XPATH, f'//*[@id="select2-q{q_current_num}-results"]/li[text()="{matches[0]}"]'))
+                selection_xpath = f'//*[@id="select2-q{q_current_num}-results"]/li[text()="{matches[0]}"]'
             else:
-                selection = self.dr.find_element(By.XPATH, f'//*[@id="select2-q{q_current_num}-results"]/li[2]')
+                selection_xpath = f'//*[@id="select2-q{q_current_num}-results"]/li[2]'
                 logger.info(f"[Question {q_current_num}] No close option found for '{basic_info}'")
         else:
-            selection = self.dr.find_element(By.XPATH, f'//*[@id="select2-q{q_current_num}-results"]/li[2]')
+            selection_xpath = f'//*[@id="select2-q{q_current_num}-results"]/li[2]'
             logger.info(f"[Question {q_current_num}] This selection is not related to basic info")
+        selection = WebDriverWait(self.dr, 10).until(
+            EC.element_to_be_clickable((By.XPATH, selection_xpath))
+        )
         self._safe_click(selection)
         return 1
 
@@ -141,17 +151,15 @@ class AUTOFILL(TASK):
                 # time.sleep(3)
             try:
                 ne = self.dr.find_element(By.CSS_SELECTOR, "#divNext")
-                ne.click()  # 这里不能用_safe_click，因为其中的 js 点击会点击到前几页的按钮
-            except ElementNotInteractableException:
-                try:
+                if ne.is_displayed():
+                    self._safe_click(ne)
+                else:
                     acp = self.dr.find_element(By.XPATH, "//label[@for='checkxiexi']")
                     self._safe_click(acp)
                     sub = self.dr.find_element(By.CSS_SELECTOR, "#ctlNext")
                     self._safe_click(sub)
-                except Exception as e:
-                    raise RuntimeError(f"Failed to submit or turn page: {e}")
             except Exception as e:
-                raise RuntimeError(f"Failed to turn page: {e}")
+                raise RuntimeError(f"Failed to turn page or submit: {e}")
 
     # 运行自动化任务
     def run(self):
@@ -179,6 +187,6 @@ if __name__ == '__main__':
     cl_info = get_info("chenliang")
     if cl_info is not None:
         url1 = "https://www.wjx.top/vm/r0AgKQO.aspx# "
-        s1 = AUTOFILL(url1, cl_info, x_p=0, y_p=0, x_s=1920, y_s=1080)
+        s1 = AUTOFILL(url1, cl_info)
         # s1.run_with_schedule("18:00:00")
         s1.run()
