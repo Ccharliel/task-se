@@ -7,6 +7,7 @@ undetected_chromedriver
 # 数据处理
 numpy
 pandas
+python-calamine
 
 # 工具类
 python-dotenv
