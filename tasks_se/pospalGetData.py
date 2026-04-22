@@ -215,7 +215,7 @@ if __name__ == '__main__':
     # s.run({"sale": True})
     # print(s.result)
     # 测试定时任务
-    ex_time = datetime.now() + timedelta(seconds=5)
+    ex_time = datetime.now() + timedelta(seconds=1)
     date = ex_time.strftime("%Y-%m-%d")
     point = ex_time.strftime("%H:%M:%S")
     s.run_with_schedule(point=point, date=date, type_dict={"sale": True})
