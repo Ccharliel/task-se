@@ -3,6 +3,7 @@ import time
 import tempfile
 from typing import Tuple, Any
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import undetected_chromedriver as uc
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.support.select import Select
@@ -210,13 +211,16 @@ class TASK(ABC):
     def run(self):
         pass
 
-    def run_with_schedule(self, point, date=None):
+    def run_with_schedule(self, point, date=None, if_block=True, *args, **kwargs):
         hour, minute, second = point.split(':')
-        scheduler = BlockingScheduler()
-        if date is None:
-            scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second)
+        if if_block:
+            scheduler = BlockingScheduler()
         else:
-            scheduler.add_job(self.run, 'date', run_date=date + ' ' + point)
+            scheduler = BackgroundScheduler()
+        if date is None:
+            scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second, args=args, kwargs=kwargs)
+        else:
+            scheduler.add_job(self.run, 'date', run_date=date + ' ' + point, args=args, kwargs=kwargs)
         scheduler.start()
 
     def __del__(self):

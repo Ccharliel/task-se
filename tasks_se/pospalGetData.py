@@ -212,5 +212,10 @@ if __name__ == '__main__':
     p = os.getenv("POSPAL_PASSWORD")
     s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
     s.set_period("2025-6-1~2025-6-3")
-    s.run({"sale": True})
-    print(s.result)
+    # s.run({"sale": True})
+    # print(s.result)
+    # 测试定时任务
+    ex_time = datetime.now() + timedelta(seconds=5)
+    date = ex_time.strftime("%Y-%m-%d")
+    point = ex_time.strftime("%H:%M:%S")
+    s.run_with_schedule(point=point, date=date, type_dict={"sale": True})
