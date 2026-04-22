@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import threading
 import pandas as pd
+import numpy as np
 from loguru import logger
 from sqlalchemy import create_engine
 
@@ -167,6 +168,7 @@ class POSPALGETDATA(TASK):
             logger.warning(f"{self.name} has no data to save to database !!!")
             return
         engine = create_engine(database_url)
+        self.result = self.result.replace([np.nan, np.inf, -np.inf], None)
         self.result.to_sql('sale_data', engine, if_exists='append')
 
     # 手动设置想获取数据的时间段
