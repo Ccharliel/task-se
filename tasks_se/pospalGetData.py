@@ -164,12 +164,14 @@ class POSPALGETDATA(TASK):
         return df
 
     def _save_to_database(self, database_url):
+        logger.info(f"{self.name} is saving data to database !!!")
         if self.result.empty:
             logger.warning(f"{self.name} has no data to save to database !!!")
             return
         engine = create_engine(database_url)
         self.result = self.result.replace([np.nan, np.inf, -np.inf], None)
         self.result.to_sql('sale_data', engine, if_exists='append')
+        logger.success(f"{self.name} successfully save data to database !!!")
 
     # 手动设置想获取数据的时间段
     def set_period(self, period: str = ''):
