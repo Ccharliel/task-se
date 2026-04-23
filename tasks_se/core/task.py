@@ -24,6 +24,9 @@ logger.add(f"{LOG_DIR}/cover.log",
 logger.add(f"{LOG_DIR}/driver.log",
            rotation="1 MB",
            filter=lambda record: record["function"] == "_init_driver")
+logger.add(f"{LOG_DIR}/scheduler.log",
+           rotation="1 MB",
+           filter=lambda record: record["function"] == "run_with_schedule")
 
 
 # TASK 是进行selenium进行自动化操作的任务
@@ -212,19 +215,38 @@ class TASK(ABC):
     def run(self):
         pass
 
-    def run_with_schedule(self, point: str, date=None, if_block=True, *args, **kwargs):
+    def run_with_schedule(self, point: str, date:str=None, if_block=True, add_mode=False, *args, **kwargs):
         time_parts = point.split(':')
         hour, minute, second = map(int, time_parts)
-        if if_block:
-            scheduler = BlockingScheduler()
-        else:
-            scheduler = BackgroundScheduler()
-        if date is None:
-            scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second, args=args, kwargs=kwargs)
-        else:
-            scheduler.add_job(self.run, 'date', run_date=date + ' ' + point, args=args, kwargs=kwargs)
-        scheduler.start()
-        self.scheduler = scheduler
+        while True:
+            if add_mode:
+                if self.scheduler is None:
+                    logger.warning(f"Failed to find Scheduler for {self.name} (fail to use add mode and close add mode)")
+                    add_mode = False
+                else:
+                    scheduler = self.scheduler
+                    break
+            else:
+                if if_block:
+                    logger.info(f"Creating BlockingScheduler for {self.name}")
+                    scheduler = BlockingScheduler()
+                    break
+                else:
+                    logger.info(f"Creating BackgroundScheduler for {self.name}")
+                    scheduler = BackgroundScheduler()
+                    break
+        try:
+            if date is None:
+                logger.info(f"Adding job at point everyday for {self.name}")
+                scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second, args=args, kwargs=kwargs)
+            else:
+                run_date = date + ' ' + point
+                logger.info(f"Adding job at {run_date} for {self.name}")
+                scheduler.add_job(self.run, 'date', run_date=run_date , args=args, kwargs=kwargs)
+            scheduler.start()
+            self.scheduler = scheduler
+        except Exception as e:
+            logger.warning(f"Failed to add job for {self.name} ({e})")
 
     def __del__(self):
         self.dr.quit()
