@@ -185,7 +185,9 @@ class POSPALGETDATA(TASK):
                 df_new = df.loc[~df.index.isin(existing_dates)].copy(deep=True)
             # 插入新数据
             if not df_new.empty:
-                df_new.to_sql(table_name, engine, if_exists='append', index=True, dtype={self._date_tag: String(20)})
+                dtype_mapping = {col: String(255) for col in df.columns}
+                dtype_mapping[self._date_tag] = String(20)  # 单独控制日期字段
+                df_new.to_sql(table_name, engine, if_exists='append', index=True, dtype=dtype_mapping)
                 logger.success(
                     f"{self.name} successfully save {len(df_new)} records "
                     f"for {len(df_new.index.unique())} new dates to database: {database_url} ")
@@ -253,7 +255,7 @@ if __name__ == '__main__':
     un = os.getenv("POSPAL_USERNAME")
     p = os.getenv("POSPAL_PASSWORD")
     s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
-    s.set_period("2025-6-1~2025-6-1")
+    s.set_period("2026-04-29~2026-04-29")
     # 测试运行
     s.run(task_list=[{"sale": {"verbose": True,
                                "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
