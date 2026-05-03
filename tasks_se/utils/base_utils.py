@@ -124,6 +124,7 @@ def chromedriver_downloading(version, save_dir):
             if f"chromedriver{extention}" in files:
                 src = os.path.join(root, f"chromedriver{extention}")
                 shutil.move(src, save_path)
+                os.chmod(save_path, 0o755) # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
                 break
         logger.success(f"Successfully download ChromeDriver: {save_path}")
         return save_path
