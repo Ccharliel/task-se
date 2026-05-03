@@ -85,6 +85,8 @@ def get_platform_chromedriver():
 
 def chromedriver_downloading(version, save_dir):
     """通过国内镜像下载指定版本浏览器驱动，返回驱动路径"""
+    zip_path = None
+    tmp_dir = None
     try:
         version_tag = version.replace(".", "_")
         if not version_tag:

@@ -13,5 +13,5 @@ pymysql
 
 # 工具类
 python-dotenv
-setuptools
 loguru
+setuptools
