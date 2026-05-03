@@ -110,12 +110,12 @@ class TASK(ABC):
                 opt.add_argument("--no-sandbox")  # 禁用沙盒
                 opt.add_argument("--disable-dev-shm-usage")  # 禁用共享内存
                 ## 创建驱动实例并调整
-                driver_path = chromedriver_downloading(CHROME_VERSION, os.path.join(CORE_DIR, "drivers"))
+                # 不手动管理 chromedriver 版本了，直接让 undetected_chromedriver 自动适配系统上的 Chrome 浏览器版本
+                # driver_path = chromedriver_downloading(CHROME_VERSION, os.path.join(CORE_DIR, "drivers"))
                 chrome_path = find_chrome_executable()
                 logger.info(f'{self.name} find chrome executable at {chrome_path} ...')
                 driver = uc.Chrome(
                     options=opt,
-                    driver_executable_path=driver_path,
                     chrome_executable_path=chrome_path,
                     version_main=int(CHROME_VERSION.split(".")[0]),
                     use_subprocess=True
