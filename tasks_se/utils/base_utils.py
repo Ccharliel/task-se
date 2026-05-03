@@ -104,7 +104,7 @@ def chromedriver_downloading(version, save_dir):
         # 下载 zip
         response = requests.get(url_huawei)
         if response.status_code != 200:
-            raise Exception(f"mirro erro: {response.status_code}")
+            raise Exception(f"mirro erro: {response.status_code} ({url_huawei})")
         # 保存 zip
         zip_path = save_path + ".zip"
         with open(zip_path, 'wb') as f:
