@@ -12,11 +12,18 @@
 ## 安装
 
 ```bash
-pip install git+https://github.com/Ccharliel/task-se.git@main
+pip install git+https://github.com/Ccharliel/tasks-se.git@main
 ```
 
 ## 更新
 ```bash
-pip uninstall task-se -y
-pip install git+https://github.com/Ccharliel/task-se.git@main
+pip uninstall tasks-se -y
+```
+然后
+```bash
+pip install git+https://github.com/Ccharliel/tasks-se.git@main
+```
+或者
+```bash
+pip install git+https://gitee.com/Ccharliel/tasks-se.git@main
 ```
