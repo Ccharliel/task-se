@@ -94,8 +94,12 @@ def chromedriver_downloading(version, save_dir):
     except Exception as e:
         raise ValueError(f"Invalid version format: {version}")
     platform_tag = get_platform_chromedriver()
+    if platform_tag in ["win64", "win32"]:
+        extention = ".exe"
+    else:
+        extention = ''
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, f"chromedriver-{version_tag}-{platform_tag}.exe")
+    save_path = os.path.join(save_dir, f"chromedriver-{version_tag}-{platform_tag}{extention}")
     save_path = os.path.abspath(save_path)
     if os.path.exists(save_path):
         logger.info(f"ChromeDriver existed: {save_path}")
@@ -115,10 +119,10 @@ def chromedriver_downloading(version, save_dir):
         tmp_dir = os.path.join(save_dir, "temp_driver")
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(tmp_dir)
-        # 移动exe文件
+        # 移动 chromedrive 文件
         for root, dirs, files in os.walk(tmp_dir):
-            if "chromedriver.exe" in files:
-                src = os.path.join(root, "chromedriver.exe")
+            if f"chromedriver{extention}" in files:
+                src = os.path.join(root, f"chromedriver{extention}")
                 shutil.move(src, save_path)
                 break
         logger.success(f"Successfully download ChromeDriver: {save_path}")
