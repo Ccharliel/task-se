@@ -60,6 +60,37 @@ def find_free_port(start_port, max_attempts):
                 continue
     raise Exception("找不到可用端口")
 
+def find_chrome_executable():
+    """
+    全平台自动搜索 Chrome/Chromium 浏览器路径
+    不写死任何路径，自动查找，永远有效
+    """
+    system = sys.platform
+    # ==================== Windows 查找 ====================
+    if system == "win32":
+        paths = [
+            shutil.which("chrome.exe"),
+            shutil.which("chromium.exe"),
+            os.path.join(os.getenv("PROGRAMFILES", ""), "Google/Chrome/Application/chrome.exe"),
+            os.path.join(os.getenv("PROGRAMFILES(X86)", ""), "Google/Chrome/Application/chrome.exe"),
+        ]
+        for p in paths:
+            if p and os.path.exists(p):
+                return p
+    # ==================== Linux 查找（自动搜索） ====================
+    elif system == "linux":
+        commands = ["google-chrome", "chrome", "chromium", "chromium-browser"]
+        for cmd in commands:
+            path = shutil.which(cmd)
+            if path:
+                return path
+    # ==================== Mac 查找 ====================
+    elif system == "darwin":
+        path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        if os.path.exists(path):
+            return path
+    # 找不到返回 None，让 uc 自动尝试
+    return None
 
 def get_platform_chromedriver():
     "获取当前平台信息, 返回符合 ChromeDriver 命名规范的字符串"

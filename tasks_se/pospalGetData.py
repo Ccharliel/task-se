@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, text, String
 
 from tasks_se.core.task import TASK
 
+
 # POSPALGETDATA 是通过银豹系统获得某时间段每天的营业数据的任务
 class POSPALGETDATA(TASK):
     Num = 0

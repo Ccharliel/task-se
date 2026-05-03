@@ -111,9 +111,12 @@ class TASK(ABC):
                 opt.add_argument("--disable-dev-shm-usage")  # 禁用共享内存
                 ## 创建驱动实例并调整
                 driver_path = chromedriver_downloading(CHROME_VERSION, os.path.join(CORE_DIR, "drivers"))
+                chrome_path = find_chrome_executable()
                 driver = uc.Chrome(
                     options=opt,
-                    driver_executable_path=driver_path
+                    driver_executable_path=driver_path,
+                    chrome_executable_path=chrome_path,
+                    version_main=int(CHROME_VERSION.split(".")[0])
                 )
                 driver.get(self.u)
                 time.sleep(0.1)
