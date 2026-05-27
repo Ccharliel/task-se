@@ -158,6 +158,7 @@ def chrome_driver_downloading(version, save_dir):
                             shutil.move(sub_src, sub_dst)
                     else:
                         shutil.move(src_path, os.path.join(chrome_dir, item))
+                os.chmod(chrome_save_path, 0o755)  # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
                 logger.success(f"Successfully download Chrome: {chrome_save_path}")
             except Exception as e:
                 raise RuntimeError(f"Failed do download Chrome: {e}")
@@ -178,8 +179,8 @@ def chrome_driver_downloading(version, save_dir):
                     if f"chromedriver{extention}" in files:
                         src = os.path.join(root, f"chromedriver{extention}")
                         shutil.move(src, driver_save_path)
-                        os.chmod(driver_save_path, 0o755) # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
                         break
+                os.chmod(driver_save_path, 0o755)  # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
                 logger.success(f"Successfully download ChromeDriver: {driver_save_path}")
             except Exception as e:
                 raise RuntimeError(f"Failed do download ChromeDriver: {e}")

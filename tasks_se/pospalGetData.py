@@ -273,15 +273,15 @@ if __name__ == '__main__':
     # s = POSPALGETDATA(url, un, p)
     s.set_period("2026-04-29~2026-04-29")
     # # 测试运行
-    # s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
+    s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
     # s.run(task_list=[{"sale": {"verbose": True,
     #                            "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
-    # 测试运行定时任务
-    ex_time = datetime.now() + timedelta(seconds=1)
-    date = ex_time.strftime("%Y-%m-%d")
-    point = ex_time.strftime("%H:%M:%S")
-    s.run_with_schedule(point=point, date=date,
-                        task_list=[{"sale": {"verbose": True,
-                                             "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
+    # # 测试运行定时任务
+    # ex_time = datetime.now() + timedelta(seconds=1)
+    # date = ex_time.strftime("%Y-%m-%d")
+    # point = ex_time.strftime("%H:%M:%S")
+    # s.run_with_schedule(point=point, date=date,
+    #                     task_list=[{"sale": {"verbose": True,
+    #                                          "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
     for idx, r in enumerate(s.results):
         print(f"result{idx}: \n{r}")
