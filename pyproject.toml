@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools >= 64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tasks-se"
+version = "1.0.1"
+authors = [{ name = "Charlie" }]
+description = "some different Tasks using selenium"
+requires-python = ">=3.6"
+
+# 显式指定打包的文件夹
+[tool.setuptools.packages.find]
+include = ["tasks_se*"]
