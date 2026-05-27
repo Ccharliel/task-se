@@ -112,7 +112,6 @@ class TASK(ABC):
                 try:
                     # 优先尝试使用 undetected_chromedriver
                     logger.info(f'{self.name} is trying to use undetected_chromedriver ...')
-                    raise ValueError("my_erro")
                     ## 确定驱动参数
                     # raise ValueError
                     opt = uc.ChromeOptions()
