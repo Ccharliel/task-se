@@ -39,7 +39,7 @@ class AUTOSCREENSHOT(TASK):
             body.send_keys(Keys.ARROW_RIGHT)
 
     # 运行自动化任务
-    def run(self):
+    def run(self, if_with_schedule=False):
         try:
             start_time = time.time()
             start_time_str = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())

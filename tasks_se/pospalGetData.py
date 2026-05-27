@@ -225,7 +225,7 @@ class POSPALGETDATA(TASK):
         logger.success(f"{self.name} successfully set period to {self.__period} !!!")
 
     # 运行自动化任务
-    def run(self, task_list: list[dict] = None, if_with_schedule=False):
+    def run(self, if_with_schedule=False, task_list: list[dict] = None):
         # task_list 中 dict 格式如下
         # {(str)查询数据类型: {"verbose": (bool)是否verbose, "database_url": (str)数据库的url}}
         if task_list is None:
@@ -270,18 +270,18 @@ if __name__ == '__main__':
     un = os.getenv("POSPAL_USERNAME")
     p = os.getenv("POSPAL_PASSWORD")
     s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
+    # s = POSPALGETDATA(url, un, p)
     s.set_period("2026-04-29~2026-04-29")
-    # 测试运行
-    s.run(task_list=[{"sale": {"verbose": True,
-                               "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
-    # # 测试运行定时任务
-    # ex_time = datetime.now() + timedelta(seconds=1)
-    # date = ex_time.strftime("%Y-%m-%d")
-    # point = ex_time.strftime("%H:%M:%S")
-    # s.run_with_schedule(point=point, date=date,
-    #                     task_list=[{"sale": {"verbose": True,
-    #                                          "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}],
-    #                     if_with_schedule=True)
-
+    # # 测试运行
+    # s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
+    # s.run(task_list=[{"sale": {"verbose": True,
+    #                            "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
+    # 测试运行定时任务
+    ex_time = datetime.now() + timedelta(seconds=1)
+    date = ex_time.strftime("%Y-%m-%d")
+    point = ex_time.strftime("%H:%M:%S")
+    s.run_with_schedule(point=point, date=date,
+                        task_list=[{"sale": {"verbose": True,
+                                             "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
     for idx, r in enumerate(s.results):
         print(f"result{idx}: \n{r}")

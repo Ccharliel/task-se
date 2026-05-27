@@ -162,7 +162,7 @@ class AUTOFILL(TASK):
                 raise RuntimeError(f"Failed to turn page or submit: {e}")
 
     # 运行自动化任务
-    def run(self):
+    def run(self, if_with_schedule=False):
         try:
             start_time = time.time()
             start_time_str = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())

@@ -228,10 +228,11 @@ class TASK(ABC):
 
     # 核心运行方法
     @abstractmethod
-    def run(self):
+    def run(self, if_with_schedule):
         pass
 
     def run_with_schedule(self, point: str, date:str=None, if_block=True, add_mode=False, *args, **kwargs):
+        kwargs["if_with_schedule"] = True
         time_parts = point.split(':')
         hour, minute, second = map(int, time_parts)
         while True:

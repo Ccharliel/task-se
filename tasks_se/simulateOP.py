@@ -152,7 +152,7 @@ class SIMULATEOP(TASK):
         windows = self.dr.window_handles
         self.dr.switch_to.window(windows[self.pos])
 
-    def run(self, code=None, op='sell', amount=10):
+    def run(self, if_with_schedule=False, code=None, op='sell', amount=10):
         try:
             start_time = time.time()
             start_time_str = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())
