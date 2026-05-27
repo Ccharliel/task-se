@@ -209,3 +209,5 @@ __marimo__/
 # custom
 **/info/
 **/logs/
+**/drivers/
+**/chromes/
