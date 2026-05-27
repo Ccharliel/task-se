@@ -113,10 +113,16 @@ class POSPALGETDATA(TASK):
             EC.invisibility_of_element_located((By.CLASS_NAME, "loadingBg"))
         )
         try:
-            start_bt = self.dr.find_element(By.XPATH, '//*[@id="dateTimeRangeBox"]/input[1]')
-            end_bt = self.dr.find_element(By.XPATH, '//*[@id="dateTimeRangeBox"]/input[2]')
-            searching_bt = self.dr.find_element(
-                By.XPATH, '//*[@id="dateTimeRangeBox"]/following-sibling::div[@class="submitBtn"][1]')
+            start_bt = WebDriverWait(self.dr, 15).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="dateTimeRangeBox"]/input[1]'))
+            )
+            end_bt = WebDriverWait(self.dr, 15).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="dateTimeRangeBox"]/input[2]'))
+            )
+            searching_bt = WebDriverWait(self.dr, 15).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="dateTimeRangeBox"]/following-sibling::div[@class="submitBtn"][1]'))
+            )
         except (NoSuchElementException, ElementNotInteractableException):
             raise RuntimeError("Fatal Error: Can't find date selecting buttons!!!")
         data_list = []
@@ -135,21 +141,28 @@ class POSPALGETDATA(TASK):
                 # 点击改年份
                 if year != year_lag:
                     try:
-                        year_sel = self.dr.find_element(By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[1]')
+                        year_sel = WebDriverWait(self.dr, 10).until(
+                            EC.visibility_of_element_located(
+                                (By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[1]'))
+                        )
                     except (NoSuchElementException, ElementNotInteractableException) as e:
                         raise RuntimeError(f"Fatal Error: Can't find year selector!!! {e}")
                     self._safe_select(year_sel, "text", f"{year}")
                 # 点击改月份
                 if month != month_lag:
                     try:
-                        mon_sel = self.dr.find_element(By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[2]')
+                        mon_sel = WebDriverWait(self.dr, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[2]'))
+                        )
                     except (NoSuchElementException, ElementNotInteractableException):
                         raise RuntimeError("Fatal Error: Can't find month selector!!!")
-                    self._safe_select(mon_sel, "text",f"{month}")
+                    self._safe_select(mon_sel, "text", f"{month}")
                 # 点击改日期
                 try:
-                    day_op = self.dr.find_element(
-                        By.XPATH, f'//*[@id="ui-datepicker-div"]/table/tbody/tr/td/a[text()="{int(day)}"]')
+                    day_op = WebDriverWait(self.dr, 10).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, f'//*[@id="ui-datepicker-div"]/table/tbody/tr/td/a[text()="{int(day)}"]'))
+                    )
                 except (NoSuchElementException, ElementNotInteractableException):
                     raise RuntimeError("Fatal Error: Can't find day operator!!!")
                 self._safe_click(day_op)
