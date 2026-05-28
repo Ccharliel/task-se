@@ -158,7 +158,12 @@ def chrome_driver_downloading(version, save_dir):
                             shutil.move(sub_src, sub_dst)
                     else:
                         shutil.move(src_path, os.path.join(chrome_dir, item))
-                os.chmod(chrome_save_path, 0o755)  # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
+                # 加权限，全局通用，Windows不报错，Linux/Mac正常生效
+                for root, dirs, files in os.walk(chrome_dir):
+                    for d in dirs:
+                        os.chmod(os.path.join(root, d), 0o755)
+                    for f in files:
+                        os.chmod(os.path.join(root, f), 0o755)
                 logger.success(f"Successfully download Chrome: {chrome_save_path}")
             except Exception as e:
                 raise RuntimeError(f"Failed do download Chrome: {e}")
