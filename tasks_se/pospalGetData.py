@@ -263,7 +263,8 @@ class POSPALGETDATA(TASK):
             logger.critical(f'{self.name} failed to run !!!\n[{e}]')
         finally:
             # time.sleep(1000)
-            self.dr.quit()
+            if not if_with_schedule:
+                self.dr.quit()
 
     def __del__(self):
         super().__del__()

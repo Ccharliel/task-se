@@ -52,7 +52,8 @@ class AUTOSCREENSHOT(TASK):
         except Exception as e:
             logger.critical(f'{self.name} failed to run !!!\n[{e}]')
         finally:
-            self.dr.quit()
+            if not if_with_schedule:
+                self.dr.quit()
 
     def __del__(self):
         super().__del__()
