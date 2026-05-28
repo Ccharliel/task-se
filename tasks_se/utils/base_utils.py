@@ -30,15 +30,26 @@ def get_screen_resolution():
     root.destroy()  # 关闭窗口
     return width, height
 
-def auto_del_files(folder_path, max_nums):
+def auto_del(type, folder_path, max_nums):
     """
-    folder_path 中文件数量超过 max_nums 时，自动删除时间较早的文件
+    folder_path 中 文件/目录 数量超过 max_nums 时，自动删除时间较早的 文件/目录
     """
     folder = Path(folder_path)
-    all_files = sorted(folder.glob("*.*"), key=lambda x: os.path.getmtime(x))
-    if len(all_files) > max_nums:
-        for old_file in all_files[: -max_nums]:
-            old_file.unlink()
+    if type == 'f':
+        items = [p for p in folder.iterdir() if p.is_file()]
+    elif type == 'd':
+        items = [p for p in folder.iterdir() if p.is_dir()]
+    else:
+        raise ValueError("type can only be 'f'(file) or 'd'(directory)")
+    # 按修改时间从旧到新排序
+    items = sorted(items, key=lambda x: os.path.getmtime(x))
+    # 如果数量超过限制，删除最旧的多余项
+    if len(items) > max_nums:
+        for old_item in items[:-max_nums]:
+            if old_item.is_file():
+                old_item.unlink()
+            else:
+                shutil.rmtree(old_item)
 
 # def is_port_available(port):
 #     """检查端口是否可用"""

@@ -224,7 +224,7 @@ class TASK(ABC):
         tag = f"{self.name}_" + now
         file_path = os.path.join(folder_path, f"{tag}.png")
         self.dr.get_screenshot_as_file(file_path)
-        auto_del_files(folder_path, max_nums)
+        auto_del('f', folder_path, max_nums)
 
     # 核心运行方法
     @abstractmethod

@@ -12,6 +12,7 @@ from loguru import logger
 from sqlalchemy import create_engine, text, String
 
 from tasks_se.core.task import TASK
+from tasks_se.utils.base_utils import auto_del
 
 
 # POSPALGETDATA 是通过银豹系统获得某时间段每天的营业数据的任务
@@ -47,12 +48,11 @@ class POSPALGETDATA(TASK):
     def period(self):
         """获取 period (只读)"""
         return self.__period
-    
+
     @property
     def start_date(self):
         """获取 start_date (只读)"""
         return self.__start_date
-
 
     def end_date(self):
         """获取 end_date (只读)"""
@@ -68,16 +68,17 @@ class POSPALGETDATA(TASK):
         self._safe_click(s_bt)
 
     # 爬取银豹每天的数据
-    def _get_data_daily(self, date, type, verbose) -> pd.DataFrame:
+    def _get_data_daily(self, date, data_type, verbose) -> pd.DataFrame:
         df = pd.DataFrame()
-        if type == "sale":
+        if data_type == "sale":
             if verbose:
                 download_btn = self.dr.find_element(By.XPATH, '//*[@id="btnExport"]')
-                download_path = os.path.join(self.download_dir, type, datetime.strftime(date, "%Y-%m-%d"))
+                download_path = os.path.join(self.download_dir, data_type, datetime.strftime(date, "%Y-%m-%d"))
                 self._safe_download(download_btn, download_path)
                 files = [f for f in os.listdir(download_path) if f.endswith('.xlsx')]
                 latest_file = max([os.path.join(download_path, f) for f in files], key=os.path.getctime)
                 df = pd.read_excel(latest_file, engine='calamine')
+                auto_del('d', os.path.join(self.download_dir, data_type), 366)
             else:
                 # 数据包括：销售额（产品 / 服务）
                 sale_info = self.dr.find_element(By.XPATH, '//*[@id="mainTable"]/tbody/tr[1]/td[2]/div')
@@ -86,7 +87,8 @@ class POSPALGETDATA(TASK):
                 sale_prod, sale_ser = [i.split(' ')[1] for i in sale_comp]
                 df = pd.DataFrame([sale_prod, sale_ser, total_sale]).T
                 df.columns = ['产品销售额', '服务销售额', '总销售额']
-                df[['产品销售额', '服务销售额', '总销售额']] = df[['产品销售额', '服务销售额', '总销售额']].astype(float)
+                df[['产品销售额', '服务销售额', '总销售额']] = df[['产品销售额', '服务销售额', '总销售额']].astype(
+                    float)
                 sale_num = sale_info.find_element(By.XPATH, './span[4]').text
                 df["单数"] = sale_num
                 df['单数'] = df['单数'].astype(int)
@@ -96,18 +98,18 @@ class POSPALGETDATA(TASK):
         df = df.set_index(self._date_tag)
         return df
 
-    def _switch_page(self, type, verbose):
-        if type == "sale":
+    def _switch_page(self, data_type, verbose):
+        if data_type == "sale":
             if verbose:
                 self.dr.get(f"{self.u}/Report/ProductSaleDetails")
             else:
                 self.dr.get(f"{self.u}/Report/BusinessSummaryV2")
 
-    def _get_data(self, type, verbose):
-        logger.info(f"{self.name} is getting {self.__period} {type} data ...")
+    def _get_data(self, data_type, verbose):
+        logger.info(f"{self.name} is getting {self.__period} {data_type} data ...")
         ## 查询操作
         # 按照查询数据种类切换页面
-        self._switch_page(type, verbose)
+        self._switch_page(data_type, verbose)
         # 获取选择时间的按钮
         WebDriverWait(self.dr, 10).until(
             EC.invisibility_of_element_located((By.CLASS_NAME, "loadingBg"))
@@ -170,7 +172,7 @@ class POSPALGETDATA(TASK):
             WebDriverWait(self.dr, 10).until(
                 EC.invisibility_of_element_located((By.CLASS_NAME, "loadingBg"))
             )
-            df_daily = self._get_data_daily(current_date, type, verbose)
+            df_daily = self._get_data_daily(current_date, data_type, verbose)
             data_list.append(df_daily)
             year_lag, month_lag = year, month
             current_date = current_date + timedelta(days=1)
@@ -188,6 +190,7 @@ class POSPALGETDATA(TASK):
             # 写入空表，如果表不存在就创建
             df.iloc[:0].to_sql(table_name, engine, if_exists='append', index=True, dtype={self._date_tag: String(20)})
             current_dates = set(df.index.unique())
+            df_new = pd.DataFrame()
             if current_dates:
                 # 查询哪些时间点已存在
                 placeholders = ','.join(['%s'] * len(current_dates))
@@ -269,6 +272,7 @@ class POSPALGETDATA(TASK):
 ## AUTOGETSALE测试
 if __name__ == '__main__':
     from dotenv import load_dotenv
+
     url = "https://beta33.pospal.cn"
     load_dotenv()
     un = os.getenv("POSPAL_USERNAME")

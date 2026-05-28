@@ -19,7 +19,7 @@ def _creat_info(name: str):
     else:
         logger.warning(f"{path} not Exists !!! Creating {path} ...")
         df.to_excel(path, index=False, sheet_name="Sheet1")
-        auto_del_files("info", 10)
+        auto_del('f', "info", 10)
         return 0
 
 
