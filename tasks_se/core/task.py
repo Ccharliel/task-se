@@ -265,5 +265,21 @@ class TASK(ABC):
         except Exception as e:
             logger.warning(f"Failed to add job for {self.name} ({e})")
 
+    def shutdown(self):
+        if self.scheduler is not None:
+            try:
+                self.scheduler.shutdown(wait=False)
+            except Exception:
+                pass
+            finally:
+                self.scheduler = None
+        if self.dr is not None:
+            try:
+                self.dr.quit()
+            except Exception:
+                pass
+            finally:
+                self.dr = None
+
     def __del__(self):
         pass

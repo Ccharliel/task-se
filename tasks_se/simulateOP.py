@@ -186,9 +186,11 @@ if __name__ == '__main__':
     balance = s0.find_balance()
     print(balance)
     for CODE in CODE_list_bond:
-        s0.run(CODE)
+        s0.run(code=CODE)
     RACE1 = "实训综合大赛"
     s1 = SIMULATEOP(CATEGORY1, RACE1, shared_dr=s0.dr)
     for CODE in CODE_list_index:
-        s1.run(CODE)
+        s1.run(code=CODE)
     time.sleep(100000)
+    s0.shutdown()
+    s1.shutdown()

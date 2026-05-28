@@ -6,6 +6,7 @@ import threading
 from loguru import logger
 
 from tasks_se.core.task import TASK
+from tasks_se.utils.threading_utils import threading_running
 
 
 # AUTOSCREENSHOT 是截取HTML课件每一页的任务
@@ -51,9 +52,6 @@ class AUTOSCREENSHOT(TASK):
             logger.success(f'{self.name} successfully run !!! [start:{start_time_str} | cost:{time_cost}s]')
         except Exception as e:
             logger.critical(f'{self.name} failed to run !!!\n[{e}]')
-        finally:
-            if not if_with_schedule:
-                self.dr.quit()
 
     def __del__(self):
         super().__del__()
@@ -62,8 +60,15 @@ class AUTOSCREENSHOT(TASK):
 ## AUTOSCREENSHOT测试
 if __name__ == '__main__':
     folder_path = r"D:\Users\23213\Documents\myDocument\课\bin\R语言"
+    # 使用多线程
+    tml = []
+    sl = []
     for f in os.listdir(folder_path):
         url = "file:///" + os.path.join(folder_path, f)
         file_name = f.split(".")[0]
         s = AUTOSCREENSHOT(url, name=file_name)
-        s.run()
+        sl.append(s)
+        tml.append(s.run)
+    threading_running(tml)
+    for s in sl:
+        s.shutdown()

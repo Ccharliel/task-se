@@ -143,28 +143,20 @@ class POSPALGETDATA(TASK):
                 # 点击改年份
                 if year != year_lag:
                     try:
-                        year_sel = WebDriverWait(self.dr, 10).until(
-                            EC.visibility_of_element_located(
-                                (By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[1]'))
-                        )
+                        year_sel = self.dr.find_element(By.XPATH,  '//*[@id="ui-datepicker-div"]/div[1]/div/select[1]')
                     except (NoSuchElementException, ElementNotInteractableException) as e:
                         raise RuntimeError(f"Fatal Error: Can't find year selector!!! {e}")
                     self._safe_select(year_sel, "text", f"{year}")
                 # 点击改月份
                 if month != month_lag:
                     try:
-                        mon_sel = WebDriverWait(self.dr, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[2]'))
-                        )
+                        mon_sel = self.dr.find_element(By.XPATH, '//*[@id="ui-datepicker-div"]/div[1]/div/select[2]')
                     except (NoSuchElementException, ElementNotInteractableException):
                         raise RuntimeError("Fatal Error: Can't find month selector!!!")
                     self._safe_select(mon_sel, "text", f"{month}")
                 # 点击改日期
                 try:
-                    day_op = WebDriverWait(self.dr, 10).until(
-                        EC.element_to_be_clickable(
-                            (By.XPATH, f'//*[@id="ui-datepicker-div"]/table/tbody/tr/td/a[text()="{int(day)}"]'))
-                    )
+                    day_op = self.dr.find_element(By.XPATH, f'//*[@id="ui-datepicker-div"]/table/tbody/tr/td/a[text()="{int(day)}"]')
                 except (NoSuchElementException, ElementNotInteractableException):
                     raise RuntimeError("Fatal Error: Can't find day operator!!!")
                 self._safe_click(day_op)
@@ -229,7 +221,15 @@ class POSPALGETDATA(TASK):
 
     # 运行自动化任务
     def run(self, if_with_schedule=False, task_list: list[dict] = None):
+        """
+        task_list example: [{str(type): {"verbose": bool, "database_url": str/None}}, ...]
+        """
         try:
+            if task_list is None:
+                # 默认值
+                task_list = []
+                defalut_type_dict = {"sale": {"verbose": False, "database_url": None}}
+                task_list.append(defalut_type_dict)
             if not isinstance(if_with_schedule, bool):
                 raise TypeError("if_with_schedule must be bool")
             if not isinstance(task_list, list):
@@ -238,13 +238,6 @@ class POSPALGETDATA(TASK):
                 # 如果定时运行，默认获取当天数据
                 t = time.localtime()
                 self.set_period(time.strftime("%Y-%m-%d~%Y-%m-%d", t))
-            # task_list 中 dict 格式如下
-            # {(str)查询数据类型: {"verbose": (bool)是否verbose, "database_url": (str)数据库的url}}
-            if task_list is None:
-                # 默认值
-                task_list = []
-                defalut_type_dict = {"sale": {"verbose": False, "database_url": None}}
-                task_list.append(defalut_type_dict)
             start_time = time.time()
             start_time_str = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())
             self._login()
@@ -261,10 +254,6 @@ class POSPALGETDATA(TASK):
             logger.success(f'{self.name} successfully run !!! [start:{start_time_str} | cost:{time_cost}s]')
         except Exception as e:
             logger.critical(f'{self.name} failed to run !!!\n[{e}]')
-        finally:
-            # time.sleep(1000)
-            if not if_with_schedule:
-                self.dr.quit()
 
     def __del__(self):
         super().__del__()
@@ -278,13 +267,19 @@ if __name__ == '__main__':
     load_dotenv()
     un = os.getenv("POSPAL_USERNAME")
     p = os.getenv("POSPAL_PASSWORD")
-    s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
+    # s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
+    s = POSPALGETDATA(url, un, p, display=True, cover=(400, 0, 400, 800))
     # s = POSPALGETDATA(url, un, p)
-    s.set_period("2026-04-29~2026-04-29")
+
+    s.set_period("2025-6-1~2025-6-3")
+    # s.set_period("2026-04-29~2026-04-29")
+
     # # 测试运行
+    # s.run()
     s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
     # s.run(task_list=[{"sale": {"verbose": True,
     #                            "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
+
     # # 测试运行定时任务
     # ex_time = datetime.now() + timedelta(seconds=1)
     # date = ex_time.strftime("%Y-%m-%d")
@@ -292,5 +287,7 @@ if __name__ == '__main__':
     # s.run_with_schedule(point=point, date=date,
     #                     task_list=[{"sale": {"verbose": True,
     #                                          "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
+
     for idx, r in enumerate(s.results):
         print(f"result{idx}: \n{r}")
+    s.shutdown()

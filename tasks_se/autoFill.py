@@ -176,10 +176,6 @@ class AUTOFILL(TASK):
             logger.success(f'{self.name} successfully run !!! [start:{start_time_str} | cost:{time_cost}s]')
         except Exception as e:
             logger.critical(f'{self.name} failed to run !!!\n[{e}]')
-        finally:
-            time.sleep(100)
-            if not if_with_schedule:
-                self.dr.quit()
 
     def __del__(self):
         super().__del__()
@@ -193,3 +189,5 @@ if __name__ == '__main__':
         s1 = AUTOFILL(url1, cl_info)
         # s1.run_with_schedule("18:00:00")
         s1.run()
+        time.sleep(100)
+        s1.shutdown()
