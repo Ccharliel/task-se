@@ -225,6 +225,7 @@ class POSPALGETDATA(TASK):
         task_list example: [{str(type): {"verbose": bool, "database_url": str/None}}, ...]
         """
         try:
+            self.results = []
             if task_list is None:
                 # 默认值
                 task_list = []
@@ -240,7 +241,10 @@ class POSPALGETDATA(TASK):
                 self.set_period(time.strftime("%Y-%m-%d~%Y-%m-%d", t))
             start_time = time.time()
             start_time_str = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime())
-            self._login()
+            try:
+                self._login()
+            except NoSuchElementException:
+                pass
             time.sleep(1)
             for type_dict in task_list:
                 for ty, ty_details in type_dict.items():
@@ -262,32 +266,39 @@ class POSPALGETDATA(TASK):
 ## AUTOGETSALE测试
 if __name__ == '__main__':
     from dotenv import load_dotenv
-
+    import atexit
+    import signal
+    import sys
     url = "https://beta33.pospal.cn"
     load_dotenv()
     un = os.getenv("POSPAL_USERNAME")
     p = os.getenv("POSPAL_PASSWORD")
-    # s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
-    s = POSPALGETDATA(url, un, p, display=True, cover=(400, 0, 400, 800))
+    s = POSPALGETDATA(url, un, p, display=True, cover=(0, 0, 1440, 900))
+    # s = POSPALGETDATA(url, un, p, display=True, cover=(400, 0, 400, 800))
     # s = POSPALGETDATA(url, un, p)
-
     s.set_period("2025-6-1~2025-6-3")
     # s.set_period("2026-04-29~2026-04-29")
 
     # # 测试运行
     # s.run()
-    s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
+    # s.run(task_list=[{"sale": {"verbose": True, "database_url": None}}])
     # s.run(task_list=[{"sale": {"verbose": True,
     #                            "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
 
-    # # 测试运行定时任务
-    # ex_time = datetime.now() + timedelta(seconds=1)
-    # date = ex_time.strftime("%Y-%m-%d")
-    # point = ex_time.strftime("%H:%M:%S")
-    # s.run_with_schedule(point=point, date=date,
-    #                     task_list=[{"sale": {"verbose": True,
-    #                                          "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
-
+    # 测试运行定时任务
+    ex_time_0 = datetime.now() + timedelta(seconds=1)
+    ex_time = datetime.now() + timedelta(seconds=15)
+    date = ex_time.strftime("%Y-%m-%d")
+    point_0 = ex_time_0.strftime("%H:%M:%S")
+    point = ex_time.strftime("%H:%M:%S")
+    s.run_with_schedule(point=point_0, date=date, if_block=False,
+                        task_list=[{"sale": {"verbose": True,
+                                             "database_url": None}}])
+    time.sleep(10)
+    s.run_with_schedule(point=point, date=date, if_block=False, add_mode=False,
+                        task_list=[{"sale": {"verbose": True,
+                                             "database_url": "mysql+pymysql://root:123456@localhost:3306/pospal"}}])
+    time.sleep(20)
     for idx, r in enumerate(s.results):
         print(f"result{idx}: \n{r}")
-    s.shutdown()
+

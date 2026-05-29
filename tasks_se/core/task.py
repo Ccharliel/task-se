@@ -241,29 +241,30 @@ class TASK(ABC):
                     logger.warning(f"Failed to find Scheduler for {self.name} (fail to use add mode and close add mode)")
                     add_mode = False
                 else:
-                    scheduler = self.scheduler
                     break
             else:
+                if self.scheduler is not None:
+                    self.scheduler.shutdown(wait=False)
                 if if_block:
                     logger.info(f"Creating BlockingScheduler for {self.name}")
-                    scheduler = BlockingScheduler()
-                    break
+                    self.scheduler = BlockingScheduler()
                 else:
                     logger.info(f"Creating BackgroundScheduler for {self.name}")
-                    scheduler = BackgroundScheduler()
-                    break
+                    self.scheduler = BackgroundScheduler()
+                self.scheduler.start()
+                break
         try:
             if date is None:
                 logger.info(f"Adding job at {point} everyday for {self.name}")
-                scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second, args=args, kwargs=kwargs)
+                self.scheduler.add_job(self.run, 'cron', hour=hour, minute=minute, second=second, args=args, kwargs=kwargs)
+                logger.success(f"Successfully add job at {point} everyday for {self.name}")
             else:
                 run_date = date + ' ' + point
                 logger.info(f"Adding job at {run_date} for {self.name}")
-                scheduler.add_job(self.run, 'date', run_date=run_date , args=args, kwargs=kwargs)
-            scheduler.start()
-            self.scheduler = scheduler
+                self.scheduler.add_job(self.run, 'date', run_date=run_date , args=args, kwargs=kwargs)
+                logger.success(f"Successfully add job at {run_date} for {self.name}")
         except Exception as e:
-            logger.warning(f"Failed to add job for {self.name} ({e})")
+            logger.warning(f"Failed to add job  for {self.name} \n[{e}]")
 
     def shutdown(self):
         if self.scheduler is not None:
